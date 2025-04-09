@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twoge-app
+  namespace: twoge
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: twoge
+  template:
+    metadata:
+      labels:
+        app: twoge
+    spec:
+      containers:
+        - name: twoge
+          image: 536697237321.dkr.ecr.us-east-1.amazonaws.com/twoge:latest
+          ports:
+            - containerPort: 9876
+          env:
+            - name: FLASK_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: twoge-config
+                  key: FLASK_ENV
+          envFrom:
+            - configMapRef:
+                name: twoge-config
+            - secretRef:
+                name: twoge-secrets
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9876
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 9876
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
