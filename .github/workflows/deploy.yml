@@ -44,13 +44,16 @@ jobs:
           kubectl apply -f twoge-k8s/namespace.yml
           kubectl apply -f twoge-k8s/configmap.yml
 
-          # Dynamically create secret from GitHub secrets
+          # Create persistent volume claim for Postgres
+          kubectl apply -f twoge-k8s/storage/
+
+          # Create secrets from GitHub
           kubectl create secret generic twoge-secrets \
             --namespace=flo-twoge \
             --from-literal=DATABASE_USER=${{ secrets.DB_USER }} \
             --from-literal=DATABASE_PASSWORD=${{ secrets.DB_PASSWORD }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
+          # Deploy Postgres and the app
           kubectl apply -f twoge-k8s/database/
           kubectl apply -f twoge-k8s/flo-k8-app/
-          kubectl apply -f twoge-k8s/storage/ || true
