@@ -37,9 +37,12 @@ jobs:
             --tags "project=twoge,env=dev,owner=flo" \
             --managed
 
-      - name: Install EBS CSI Driver
+      - name: Install Amazon EBS CSI Driver Addon
         run: |
-          eksctl utils install-ebs-csi-driver \
+          aws eks create-addon \
+            --cluster-name ${{ secrets.EKS_CLUSTER_NAME }} \
             --region ${{ secrets.AWS_REGION }} \
-            --cluster ${{ secrets.EKS_CLUSTER_NAME }} \
-            --approve
+            --addon-name aws-ebs-csi-driver \
+            --addon-version v1.30.0-eksbuild.1 \
+            --resolve-conflicts OVERWRITE \
+            || echo "Addon might already exist — continuing"
