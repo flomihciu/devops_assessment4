@@ -46,3 +46,16 @@ jobs:
             --addon-version v1.30.0-eksbuild.1 \
             --resolve-conflicts OVERWRITE \
             || echo "Addon might already exist — continuing"
+
+      - name: Attach AmazonEBSCSIDriverPolicy to Node Group Role
+        run: |
+          ROLE_NAME=$(aws cloudformation describe-stacks \
+            --stack-name eksctl-${{ secrets.EKS_CLUSTER_NAME }}-nodegroup-ng-f16997bb \
+            --query "Stacks[0].Outputs[?OutputKey=='NodeInstanceRole'].OutputValue" \
+            --output text)
+
+          echo "Attaching AmazonEBSCSIDriverPolicy to role: $ROLE_NAME"
+
+          aws iam attach-role-policy \
+            --role-name "$ROLE_NAME" \
+            --policy-arn arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicy"
