@@ -1,10 +1,11 @@
-name: Destroy EKS Cluster and K8s Resources
+name: Destroy Flo EKS Cluster and App
 
 on:
   workflow_dispatch:
 
 jobs:
-  destroy:
+  destroy-flo-infra:
+    name: Tear Down EKS Cluster and App for Flo
     runs-on: ubuntu-latest
 
     steps:
@@ -23,14 +24,14 @@ jobs:
           curl --silent --location "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
           sudo mv /tmp/eksctl /usr/local/bin
 
-      - name: Update kubeconfig
+      - name: Update kubeconfig for Flo's cluster
         run: |
           aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_CLUSTER_NAME }}
 
-      - name: Delete Kubernetes namespace (twoge)
+      - name: Delete Kubernetes namespace 'twoge'
         run: |
           kubectl delete namespace twoge --ignore-not-found=true
 
-      - name: Delete EKS Cluster
+      - name: Delete Flo's EKS Cluster
         run: |
           eksctl delete cluster --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}

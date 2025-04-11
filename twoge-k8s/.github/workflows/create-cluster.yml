@@ -1,0 +1,38 @@
+name: Create Flo EKS Cluster
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-flo-cluster:
+    name: Provision EKS Cluster for Flo
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install eksctl
+        run: |
+          curl --silent --location "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+          sudo mv /tmp/eksctl /usr/local/bin
+
+      - name: Create EKS cluster for Flo 🚀
+        run: |
+          eksctl create cluster \
+            --name ${{ secrets.EKS_CLUSTER_NAME }} \
+            --region ${{ secrets.AWS_REGION }} \
+            --nodes 2 \
+            --node-type t3.small \
+            --node-volume-size 30 \
+            --version 1.29 \
+            --with-oidc \
+            --tags "project=twoge,env=dev,owner=flo" \
+            --managed

@@ -2,7 +2,10 @@ name: Deploy Twoge App to EKS
 
 on:
   workflow_dispatch:  # Only manual trigger
-  # Removed the push event trigger
+
+env:
+  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+  ECR_REPO_NAME: ${{ secrets.ECR_REPO_NAME }}
 
 jobs:
   deploy:
@@ -25,12 +28,12 @@ jobs:
       - name: Login to Amazon ECR
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
-          | docker login --username AWS --password-stdin ${{ secrets.ECR_REPO_URI }}
+          | docker login --username AWS --password-stdin $ECR_REGISTRY
 
       - name: Build and Push Docker Image to ECR
         run: |
-          docker build -t ${{ secrets.ECR_REPO_URI }} ./twoge
-          docker push ${{ secrets.ECR_REPO_URI }}
+          docker build -t $ECR_REGISTRY/$ECR_REPO_NAME:latest ./twoge
+          docker push $ECR_REGISTRY/$ECR_REPO_NAME:latest
 
       - name: Update kubeconfig for EKS
         run: |
