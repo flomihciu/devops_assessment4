@@ -36,3 +36,10 @@ jobs:
             --with-oidc \
             --tags "project=twoge,env=dev,owner=flo" \
             --managed
+
+      - name: Install EBS CSI Driver
+        run: |
+          eksctl utils install-ebs-csi-driver \
+            --region ${{ secrets.AWS_REGION }} \
+            --cluster ${{ secrets.EKS_CLUSTER_NAME }} \
+            --approve
