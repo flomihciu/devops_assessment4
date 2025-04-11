@@ -28,9 +28,9 @@ jobs:
         run: |
           aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_CLUSTER_NAME }}
 
-      - name: Delete Kubernetes namespace 'twoge'
+      - name: Delete Kubernetes namespace 'flo-twoge'
         run: |
-          kubectl delete namespace twoge --ignore-not-found=true
+          kubectl delete namespace flo-twoge --ignore-not-found=true
 
       - name: Delete Flo's EKS Cluster
         run: |

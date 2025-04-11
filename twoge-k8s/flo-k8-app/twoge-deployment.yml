@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: twoge-app
-  namespace: twoge
+  namespace: flo-twoge
 spec:
   replicas: 2
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: twoge
-          image: 536697237321.dkr.ecr.us-east-1.amazonaws.com/twoge:latest
+          image: 536697237321.dkr.ecr.us-east-2.amazonaws.com/flo-twoge:latest
           ports:
             - containerPort: 9876
           env:

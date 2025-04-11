@@ -46,7 +46,7 @@ jobs:
 
           # Dynamically create secret from GitHub secrets
           kubectl create secret generic twoge-secrets \
-            --namespace=twoge \
+            --namespace=flo-twoge \
             --from-literal=DATABASE_USER=${{ secrets.DB_USER }} \
             --from-literal=DATABASE_PASSWORD=${{ secrets.DB_PASSWORD }} \
             --dry-run=client -o yaml | kubectl apply -f -
