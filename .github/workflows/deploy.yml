@@ -1,7 +1,7 @@
 name: Deploy Twoge App to EKS
 
 on:
-  workflow_dispatch:  # Only manual trigger
+  workflow_dispatch:
 
 env:
   ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
@@ -44,7 +44,12 @@ jobs:
           kubectl apply -f twoge-k8s/namespace.yml
           kubectl apply -f twoge-k8s/configmap.yml
 
-          # Create persistent volume claim for Postgres
+          # Delete broken DB pods and deployment if they exist
+          kubectl delete deployment twoge-db -n flo-twoge --ignore-not-found
+          kubectl delete pod -l app=twoge-db -n flo-twoge --ignore-not-found
+          kubectl delete pvc postgres-pvc -n flo-twoge --ignore-not-found
+
+          # Recreate PVC for Postgres
           kubectl apply -f twoge-k8s/storage/
 
           # Create secrets from GitHub
@@ -57,12 +62,3 @@ jobs:
           # Deploy Postgres and the app
           kubectl apply -f twoge-k8s/database/
           kubectl apply -f twoge-k8s/flo-k8-app/
-
-          # PATCH Postgres deployment to fix lost+found error
-          kubectl patch deployment twoge-db -n flo-twoge --type='json' -p='[
-            {
-              "op": "add",
-              "path": "/spec/template/spec/containers/0/args",
-              "value": ["-D", "/var/lib/postgresql/data/db-files"]
-            }
-          ]'
