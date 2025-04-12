@@ -19,13 +19,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Install eksctl
+      - name: Install eksctl and jq
         run: |
           curl --silent --location "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
           sudo mv /tmp/eksctl /usr/local/bin
-
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
+          sudo apt-get update && sudo apt-get install -y jq
 
       - name: Create EKS cluster for Flo 🚀
         run: |
@@ -52,13 +50,14 @@ jobs:
 
       - name: Attach AmazonEBSCSIDriverPolicy to Node Group Role
         run: |
-          echo "⏳ Getting NodeInstanceRole from eksctl..."
+          echo "⏳ Finding nodegroup role from eksctl..."
           ROLE_ARN=$(eksctl get nodegroup \
             --cluster ${{ secrets.EKS_CLUSTER_NAME }} \
             --region ${{ secrets.AWS_REGION }} \
             -o json | jq -r '.[0].NodeInstanceRoleARN')
 
           ROLE_NAME=$(basename "$ROLE_ARN")
+
           echo "🔐 Attaching AmazonEBSCSIDriverPolicy to role: $ROLE_NAME"
 
           aws iam attach-role-policy \

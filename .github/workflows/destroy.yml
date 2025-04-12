@@ -32,6 +32,32 @@ jobs:
         run: |
           kubectl delete namespace flo-twoge --ignore-not-found=true
 
+      - name: Detach AmazonEBSCSIDriverPolicy (if role exists)
+        run: |
+          echo "⏳ Finding nodegroup stack..."
+          STACK_NAME=$(aws cloudformation list-stacks \
+            --region ${{ secrets.AWS_REGION }} \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "StackSummaries[?starts_with(StackName, 'eksctl-${{ secrets.EKS_CLUSTER_NAME }}-nodegroup')].StackName" \
+            --output text)
+
+          if [[ -n "$STACK_NAME" ]]; then
+            echo "✅ Found stack: $STACK_NAME"
+            ROLE_ARN=$(aws cloudformation describe-stacks \
+              --region ${{ secrets.AWS_REGION }} \
+              --stack-name "$STACK_NAME" \
+              --query "Stacks[0].Outputs[?OutputKey=='NodeInstanceRole'].OutputValue" \
+              --output text)
+            ROLE_NAME=$(basename "$ROLE_ARN")
+
+            echo "🔐 Detaching AmazonEBSCSIDriverPolicy from role: $ROLE_NAME"
+            aws iam detach-role-policy \
+              --role-name "$ROLE_NAME" \
+              --policy-arn arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicy || echo "⚠️ Detach failed (possibly already removed)"
+          else
+            echo "⚠️ No matching stack found — skipping IAM detachment"
+          fi
+
       - name: Delete Flo's EKS Cluster Only (Preserve VPC, IAM, etc.)
         run: |
           eksctl delete cluster \
