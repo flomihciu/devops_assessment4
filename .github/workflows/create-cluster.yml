@@ -47,10 +47,27 @@ jobs:
             --resolve-conflicts OVERWRITE \
             || echo "Addon might already exist — continuing"
 
-      - name: Attach AmazonEBSCSIDriverPolicy to Node Group Role
+      - name: Attach AmazonEBSCSIDriverPolicy to Node Group Role 🔐
         run: |
-          echo "🔐 Attaching AmazonEBSCSIDriverPolicy to role: eksctl-flo-twoge-cluster-nodegroup-NodeInstanceRole-eZHj0ZggbZyv"
+          echo "⏳ Finding nodegroup stack..."
+          STACK_NAME=$(aws cloudformation list-stacks \
+            --region ${{ secrets.AWS_REGION }} \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+            --query "StackSummaries[?starts_with(StackName, 'eksctl-${{ secrets.EKS_CLUSTER_NAME }}-nodegroup')].StackName" \
+            --output text)
+
+          echo "✅ Detected nodegroup stack: $STACK_NAME"
+
+          ROLE_ARN=$(aws cloudformation describe-stacks \
+            --region ${{ secrets.AWS_REGION }} \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='NodeInstanceRole'].OutputValue" \
+            --output text)
+
+          ROLE_NAME=$(basename "$ROLE_ARN")
+
+          echo "🔐 Attaching AmazonEBSCSIDriverPolicy to role: $ROLE_NAME"
 
           aws iam attach-role-policy \
-            --role-name eksctl-flo-twoge-cluster-nodegroup-NodeInstanceRole-eZHj0ZggbZyv \
+            --role-name "$ROLE_NAME" \
             --policy-arn arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicy
