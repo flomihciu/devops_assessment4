@@ -39,7 +39,8 @@ jobs:
             --version 1.29 \
             --with-oidc \
             --tags "project=twoge,env=dev,owner=flo" \
-            --managed
+            --managed \
+            --wait
 
       - name: Create IAM service account for EBS CSI driver
         run: |
@@ -51,7 +52,7 @@ jobs:
             --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
             --approve \
             --role-only \
-            --role-name AmazonEKS_EBS_CSI_DriverRole
+            --role-name AmazonEKS_EBS_CSI_DriverRole_flo
 
       - name: Install Amazon EBS CSI Driver Addon
         run: |
@@ -61,6 +62,6 @@ jobs:
             --region ${{ secrets.AWS_REGION }} \
             --addon-name aws-ebs-csi-driver \
             --addon-version v1.30.0-eksbuild.1 \
-            --service-account-role-arn arn:aws:iam::$ACCOUNT_ID:role/AmazonEKS_EBS_CSI_DriverRole \
+            --service-account-role-arn arn:aws:iam::$ACCOUNT_ID:role/AmazonEKS_EBS_CSI_DriverRole_flo \
             --resolve-conflicts OVERWRITE \
             || echo "Addon might already exist — continuing"
