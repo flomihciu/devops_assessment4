@@ -24,6 +24,9 @@ jobs:
           curl --silent --location "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
           sudo mv /tmp/eksctl /usr/local/bin
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Create EKS cluster for Flo 🚀
         run: |
           eksctl create cluster \
@@ -47,37 +50,17 @@ jobs:
             --resolve-conflicts OVERWRITE \
             || echo "Addon might already exist — continuing"
 
-      - name: Wait for nodegroup stack to be ready
-        run: |
-          echo "🕒 Waiting for nodegroup stack outputs to be available..."
-          sleep 60
-
       - name: Attach AmazonEBSCSIDriverPolicy to Node Group Role
         run: |
-          echo "⏳ Finding nodegroup stack..."
-          STACK_NAME=$(aws cloudformation list-stacks \
+          echo "⏳ Getting NodeInstanceRole from eksctl..."
+          ROLE_ARN=$(eksctl get nodegroup \
+            --cluster ${{ secrets.EKS_CLUSTER_NAME }} \
             --region ${{ secrets.AWS_REGION }} \
-            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
-            --query "StackSummaries[?starts_with(StackName, 'eksctl-${{ secrets.EKS_CLUSTER_NAME }}-nodegroup')].StackName" \
-            --output text)
-
-          echo "✅ Detected nodegroup stack: $STACK_NAME"
-
-          ROLE_ARN=$(aws cloudformation describe-stacks \
-            --region ${{ secrets.AWS_REGION }} \
-            --stack-name "$STACK_NAME" \
-            --query "Stacks[0].Outputs[?OutputKey=='NodeInstanceRole'].OutputValue" \
-            --output text)
-
-          if [[ -z "$ROLE_ARN" || "$ROLE_ARN" == "None" ]]; then
-            echo "❌ Failed to get NodeInstanceRole from stack outputs"
-            exit 1
-          fi
+            -o json | jq -r '.[0].NodeInstanceRoleARN')
 
           ROLE_NAME=$(basename "$ROLE_ARN")
-
           echo "🔐 Attaching AmazonEBSCSIDriverPolicy to role: $ROLE_NAME"
 
           aws iam attach-role-policy \
             --role-name "$ROLE_NAME" \
-            --policy-arn arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicy"
+            --policy-arn arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicy
