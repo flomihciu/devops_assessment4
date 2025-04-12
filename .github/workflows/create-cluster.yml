@@ -47,6 +47,11 @@ jobs:
             --resolve-conflicts OVERWRITE \
             || echo "Addon might already exist — continuing"
 
+      - name: Wait for nodegroup stack to be ready
+        run: |
+          echo "🕒 Waiting for nodegroup stack outputs to be available..."
+          sleep 60
+
       - name: Attach AmazonEBSCSIDriverPolicy to Node Group Role
         run: |
           echo "⏳ Finding nodegroup stack..."
@@ -64,10 +69,15 @@ jobs:
             --query "Stacks[0].Outputs[?OutputKey=='NodeInstanceRole'].OutputValue" \
             --output text)
 
+          if [[ -z "$ROLE_ARN" || "$ROLE_ARN" == "None" ]]; then
+            echo "❌ Failed to get NodeInstanceRole from stack outputs"
+            exit 1
+          fi
+
           ROLE_NAME=$(basename "$ROLE_ARN")
 
           echo "🔐 Attaching AmazonEBSCSIDriverPolicy to role: $ROLE_NAME"
 
           aws iam attach-role-policy \
             --role-name "$ROLE_NAME" \
-            --policy-arn arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicy
+            --policy-arn arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicy"
