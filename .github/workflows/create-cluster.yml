@@ -59,7 +59,7 @@ jobs:
           ROLE_NAME=$(aws cloudformation describe-stacks \
             --stack-name "$STACK_NAME" \
             --query "Stacks[0].Outputs[?OutputKey=='NodeInstanceRole'].OutputValue" \
-            --output text | awk -F'/' '{print $2}')
+            --output text)
 
           echo "Attaching AmazonEBSCSIDriverPolicy to role: $ROLE_NAME"
 
