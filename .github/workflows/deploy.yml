@@ -57,3 +57,12 @@ jobs:
           # Deploy Postgres and the app
           kubectl apply -f twoge-k8s/database/
           kubectl apply -f twoge-k8s/flo-k8-app/
+
+          # PATCH Postgres deployment to fix lost+found error
+          kubectl patch deployment twoge-db -n flo-twoge --type='json' -p='[
+            {
+              "op": "add",
+              "path": "/spec/template/spec/containers/0/args",
+              "value": ["-D", "/var/lib/postgresql/data/db-files"]
+            }
+          ]'
