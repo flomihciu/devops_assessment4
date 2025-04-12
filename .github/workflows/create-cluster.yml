@@ -47,7 +47,7 @@ jobs:
             --resolve-conflicts OVERWRITE \
             || echo "Addon might already exist — continuing"
 
-      - name: Attach AmazonEBSCSIDriverPolicy to Node Group Role 🔐
+      - name: Attach AmazonEBSCSIDriverPolicy to Node Group Role
         run: |
           echo "⏳ Finding nodegroup stack..."
           STACK_NAME=$(aws cloudformation list-stacks \
@@ -63,6 +63,13 @@ jobs:
             --stack-name "$STACK_NAME" \
             --query "Stacks[0].Outputs[?OutputKey=='NodeInstanceRole'].OutputValue" \
             --output text)
+
+          echo "🔎 ROLE_ARN: $ROLE_ARN"
+
+          if [ -z "$ROLE_ARN" ]; then
+            echo "❌ Could not find NodeInstanceRole ARN. Exiting."
+            exit 1
+          fi
 
           ROLE_NAME=$(basename "$ROLE_ARN")
 
