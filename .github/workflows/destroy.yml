@@ -1,4 +1,4 @@
-name: Destroy Flo EKS Cluster and App
+name: Destroy Flo EKS Cluster and App (Safe)
 
 on:
   workflow_dispatch:
@@ -32,6 +32,10 @@ jobs:
         run: |
           kubectl delete namespace flo-twoge --ignore-not-found=true
 
-      - name: Delete Flo's EKS Cluster
+      - name: Delete Flo's EKS Cluster Only (Preserve VPC, IAM, etc.)
         run: |
-          eksctl delete cluster --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
+          eksctl delete cluster \
+            --name ${{ secrets.EKS_CLUSTER_NAME }} \
+            --region ${{ secrets.AWS_REGION }} \
+            --disable-nodegroup-eviction \
+            --wait
