@@ -16,6 +16,7 @@ spec:
       containers:
         - name: postgres
           image: postgres:13
+          args: ["-D", "/var/lib/postgresql/data/db-files"]
           ports:
             - containerPort: 5432
           env:
