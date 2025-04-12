@@ -19,13 +19,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Install eksctl and jq
+      - name: Install eksctl, jq, and AWS CLI v2
         run: |
           curl --silent --location "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
           sudo mv /tmp/eksctl /usr/local/bin
-          sudo apt-get update && sudo apt-get install -y jq
+          sudo apt-get update && sudo apt-get install -y jq unzip curl
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
 
-      - name: Create EKS cluster for Flo 🚀
+      - name: Create EKS cluster for Flo
         run: |
           eksctl create cluster \
             --name ${{ secrets.EKS_CLUSTER_NAME }} \
@@ -38,28 +41,26 @@ jobs:
             --tags "project=twoge,env=dev,owner=flo" \
             --managed
 
+      - name: Create IAM service account for EBS CSI driver
+        run: |
+          eksctl create iamserviceaccount \
+            --region ${{ secrets.AWS_REGION }} \
+            --name ebs-csi-controller-sa \
+            --namespace kube-system \
+            --cluster ${{ secrets.EKS_CLUSTER_NAME }} \
+            --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+            --approve \
+            --role-only \
+            --role-name AmazonEKS_EBS_CSI_DriverRole
+
       - name: Install Amazon EBS CSI Driver Addon
         run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           aws eks create-addon \
             --cluster-name ${{ secrets.EKS_CLUSTER_NAME }} \
             --region ${{ secrets.AWS_REGION }} \
             --addon-name aws-ebs-csi-driver \
             --addon-version v1.30.0-eksbuild.1 \
+            --service-account-role-arn arn:aws:iam::$ACCOUNT_ID:role/AmazonEKS_EBS_CSI_DriverRole \
             --resolve-conflicts OVERWRITE \
             || echo "Addon might already exist — continuing"
-
-      - name: Attach AmazonEBSCSIDriverPolicy to Node Group Role
-        run: |
-          echo "⏳ Finding nodegroup role from eksctl..."
-          ROLE_ARN=$(eksctl get nodegroup \
-            --cluster ${{ secrets.EKS_CLUSTER_NAME }} \
-            --region ${{ secrets.AWS_REGION }} \
-            -o json | jq -r '.[0].NodeInstanceRoleARN')
-
-          ROLE_NAME=$(basename "$ROLE_ARN")
-
-          echo "🔐 Attaching AmazonEBSCSIDriverPolicy to role: $ROLE_NAME"
-
-          aws iam attach-role-policy \
-            --role-name "$ROLE_NAME" \
-            --policy-arn arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicy
