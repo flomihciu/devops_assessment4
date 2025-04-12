@@ -36,8 +36,7 @@ jobs:
             --version 1.29 \
             --with-oidc \
             --tags "project=twoge,env=dev,owner=flo" \
-            --managed \
-            --wait
+            --managed
 
       - name: Create IAM service account for EBS CSI driver
         run: |
